@@ -87,19 +87,19 @@ function generateOrg3() {
 
     infoln "Generating certificates using Fabric CA"
 
-    IMAGE_TAG=${CA_IMAGETAG} docker-compose -f $COMPOSE_FILE_CA_ORG3 up -d 2>&1
+    IMAGE_TAG=${CA_IMAGETAG} docker-compose -f docker/docker-compose-ca-org${ORG_NUM}.yaml up -d 2>&1
 
     . fabric-ca/registerEnroll.sh
 
     sleep 10
 
     infoln "Creating Org3 Identities"
-    createOrg3
+    createOrg3 ${ORG_NUM}
 
   fi
 
   infoln "Generating CCP files for Org3"
-  ./ccp-generate.sh
+  ./ccp-generate${ORG_NUM}.sh 
 }
 
 # Generate channel configuration transaction
@@ -108,26 +108,26 @@ function generateOrg3Definition() {
   if [ "$?" -ne 0 ]; then
     fatalln "configtxgen tool not found. exiting"
   fi
-  infoln "Generating Org3 organization definition"
+  infoln "Generating Org${ORG_NUM} organization definition"
   export FABRIC_CFG_PATH=$PWD
   set -x
-  configtxgen -printOrg Org3MSP > ../organizations/peerOrganizations/org3.example.com/org3.json
+  configtxgen -printOrg Org${ORG_NUM}MSP > ../organizations/peerOrganizations/org${ORG_NUM}.example.com/org${ORG_NUM}.json
   res=$?
   { set +x; } 2>/dev/null
   if [ $res -ne 0 ]; then
-    fatalln "Failed to generate Org3 organization definition..."
+    fatalln "Failed to generate Org${ORG_NUM} organization definition..."
   fi
 }
 
 function Org3Up () {
   # start org3 nodes
   if [ "${DATABASE}" == "couchdb" ]; then
-    IMAGE_TAG=${IMAGETAG} docker-compose -f $COMPOSE_FILE_ORG3 -f $COMPOSE_FILE_COUCH_ORG3 up -d 2>&1
+    IMAGE_TAG=${IMAGETAG} docker-compose -f docker/docker-compose-org${ORG_NUM}.yaml -f docker/docker-compose-couch-org${ORG_NUM}.yaml up -d 2>&1
   else
-    IMAGE_TAG=$IMAGETAG docker-compose -f $COMPOSE_FILE_ORG3 up -d 2>&1
+    IMAGE_TAG=$IMAGETAG docker-compose -f docker/docker-compose-org${ORG_NUM}.yaml up -d 2>&1
   fi
   if [ $? -ne 0 ]; then
-    fatalln "ERROR !!!! Unable to start Org3 network"
+    fatalln "ERROR !!!! Unable to start Org${ORG_NUM} network"
   fi
 }
 
@@ -139,27 +139,27 @@ function addOrg3 () {
   fi
 
   # generate artifacts if they don't exist
-  if [ ! -d "../organizations/peerOrganizations/org3.example.com" ]; then
+  if [ ! -d "../organizations/peerOrganizations/org${ORG_NUM}.example.com" ]; then
     generateOrg3
     generateOrg3Definition
   fi
 
-  infoln "Bringing up Org3 peer"
+  infoln "Bringing up Org${ORG_NUM} peer"
   Org3Up
 
   # Use the CLI container to create the configuration transaction needed to add
   # Org3 to the network
-  infoln "Generating and submitting config tx to add Org3"
-  docker exec cli ./scripts/org3-scripts/updateChannelConfig.sh $CHANNEL_NAME $CLI_DELAY $CLI_TIMEOUT $VERBOSE
-  if [ $? -ne 0 ]; then
-    fatalln "ERROR !!!! Unable to create config tx"
-  fi
+  # infoln "Generating and submitting config tx to add Org3"
+  # docker exec cli ./scripts/org3-scripts/updateChannelConfig.sh $CHANNEL_NAME $CLI_DELAY $CLI_TIMEOUT $VERBOSE
+  # if [ $? -ne 0 ]; then
+  #   fatalln "ERROR !!!! Unable to create config tx"
+  # fi
 
-  infoln "Joining Org3 peers to network"
-  docker exec cli ./scripts/org3-scripts/joinChannel.sh $CHANNEL_NAME $CLI_DELAY $CLI_TIMEOUT $VERBOSE
-  if [ $? -ne 0 ]; then
-    fatalln "ERROR !!!! Unable to join Org3 peers to network"
-  fi
+  # infoln "Joining Org3 peers to network"
+  # docker exec cli ./scripts/org3-scripts/joinChannel.sh $CHANNEL_NAME $CLI_DELAY $CLI_TIMEOUT $VERBOSE
+  # if [ $? -ne 0 ]; then
+  #   fatalln "ERROR !!!! Unable to join Org3 peers to network"
+  # fi
 }
 
 # Tear down running network
@@ -177,24 +177,20 @@ OS_ARCH=$(echo "$(uname -s|tr '[:upper:]' '[:lower:]'|sed 's/mingw64_nt.*/window
 
 # Using crpto vs CA. default is cryptogen
 CRYPTO="cryptogen"
-
+# another container before giving up
 CLI_TIMEOUT=10
 #default for delay
 CLI_DELAY=3
 # channel name defaults to "mychannel"
 CHANNEL_NAME="mychannel"
-# use this as the docker compose couch file
-COMPOSE_FILE_COUCH_ORG3=docker/docker-compose-couch-org3.yaml
-# use this as the default docker-compose yaml definition
-COMPOSE_FILE_ORG3=docker/docker-compose-org3.yaml
-# certificate authorities compose file
-COMPOSE_FILE_CA_ORG3=docker/docker-compose-ca-org3.yaml
 # default image tag
 IMAGETAG="latest"
 # default ca image tag
 CA_IMAGETAG="latest"
 # database
 DATABASE="leveldb"
+# organization
+ORG_NUM = 3
 
 # Parse commandline args
 
@@ -233,6 +229,10 @@ while [[ $# -ge 1 ]] ; do
     ;;
   -s )
     DATABASE="$2"
+    shift
+    ;;
+  -o )
+    ORG_NUM="$2"
     shift
     ;;
   -i )

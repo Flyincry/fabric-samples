@@ -26,6 +26,18 @@ createAnchorPeerUpdate() {
   elif [ $ORG -eq 3 ]; then
     HOST="peer0.org3.example.com"
     PORT=11051
+  elif [ $ORG -eq 4 ]; then
+    HOST="peer0.org4.example.com"
+    PORT=13051
+  elif [ $ORG -eq 5 ]; then
+    HOST="peer0.org5.example.com"
+    PORT=15051
+  elif [ $ORG -eq 6 ]; then
+    HOST="peer0.org6.example.com"
+    PORT=17051
+  elif [ $ORG -eq 7 ]; then
+    HOST="peer0.org7.example.com"
+    PORT=19051
   else
     errorln "Org${ORG} unknown"
   fi
@@ -42,11 +54,11 @@ createAnchorPeerUpdate() {
 }
 
 updateAnchorPeer() {
-  peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME -f ${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile $ORDERER_CA >&log.txt
+  peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME -f ${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile "$ORDERER_CA" >&log.txt
   res=$?
   cat log.txt
   verifyResult $res "Anchor peer update failed"
-  successln "Anchor peer set for org '$CORE_PEER_LOCALMSPID' on channel '$CHANNEL_NAME'"
+  successln "Anchor peer set for org "$CORE_PEER_LOCALMSPID" on channel "$CHANNEL_NAME""
 }
 
 ORG=$1
@@ -55,4 +67,4 @@ setGlobalsCLI $ORG
 
 createAnchorPeerUpdate 
 
-updateAnchorPeer 
+updateAnchorPeer

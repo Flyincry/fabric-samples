@@ -15,10 +15,12 @@ CHANNEL_NAME="$1"
 DELAY="$2"
 TIMEOUT="$3"
 VERBOSE="$4"
+ORG_NUM="$5"
 : ${CHANNEL_NAME:="mychannel"}
 : ${DELAY:="3"}
 : ${TIMEOUT:="10"}
 : ${VERBOSE:="false"}
+: ${ORG_NUM:="3"}
 COUNTER=1
 MAX_RETRY=5
 
@@ -49,22 +51,22 @@ setAnchorPeer() {
   scripts/setAnchorPeer.sh $ORG $CHANNEL_NAME
 }
 
-setGlobalsCLI 3
+setGlobalsCLI $ORG_NUM
 BLOCKFILE="${CHANNEL_NAME}.block"
 
 echo "Fetching channel config block from orderer..."
 set -x
-peer channel fetch 0 $BLOCKFILE -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA >&log.txt
+peer channel fetch 0 $BLOCKFILE -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME --tls --cafile "$ORDERER_CA" >&log.txt
 res=$?
 { set +x; } 2>/dev/null
 cat log.txt
 verifyResult $res "Fetching config block from orderer has failed"
 
-infoln "Joining org3 peer to the channel..."
-joinChannel 3
+infoln "Joining org$ORG_NUM peer to the channel..."
+joinChannel $ORG_NUM
 
-infoln "Setting anchor peer for org3..."
-setAnchorPeer 3
+infoln "Setting anchor peer for org$ORG_NUM..."
+setAnchorPeer $ORG_NUM
 
 successln "Channel '$CHANNEL_NAME' joined"
-successln "Org3 peer successfully added to network"
+successln "Org$ORG_NUM peer successfully added to network"

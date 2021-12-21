@@ -14,10 +14,12 @@ CHANNEL_NAME="$1"
 DELAY="$2"
 TIMEOUT="$3"
 VERBOSE="$4"
+ORG_NUM="$5"
 : ${CHANNEL_NAME:="mychannel"}
 : ${DELAY:="3"}
 : ${TIMEOUT:="10"}
 : ${VERBOSE:="false"}
+: ${ORG_NUM:="3"}
 COUNTER=1
 MAX_RETRY=5
 
@@ -41,12 +43,22 @@ jq -s '.[0] * {"channel_group":{"groups":{"Application":{"groups": {"Org3MSP":.[
 createConfigUpdate ${CHANNEL_NAME} config.json modified_config.json org3_update_in_envelope.pb
 
 infoln "Signing config transaction"
-signConfigtxAsPeerOrg 1 org3_update_in_envelope.pb
+signConfigtxAsPeerOrg 1 org${ORG_NUM}_update_in_envelope.pb
+signConfigtxAsPeerOrg 2 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 3 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 4 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 5 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 6 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 7 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 8 org${ORG_NUM}_update_in_envelope.pb
+# signConfigtxAsPeerOrg 9 org${ORG_NUM}_update_in_envelope.pb
+
 
 infoln "Submitting transaction from a different peer (peer0.org2) which also signs it"
 setGlobals 2
 set -x
-peer channel update -f org3_update_in_envelope.pb -c ${CHANNEL_NAME} -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${ORDERER_CA}
+peer channel update -f org${ORG_NUM}_update_in_envelope.pb -c ${CHANNEL_NAME} -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA"
 { set +x; } 2>/dev/null
 
-successln "Config transaction to add org3 to network submitted"
+
+successln "Config transaction to add org$ORG_NUM to network submitted"
